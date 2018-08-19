@@ -1,5 +1,6 @@
 from multiprocessing import Pool
 from utils import *
+import utils
 import argparse
 import time
 
@@ -12,7 +13,7 @@ parser.add_argument('-start', '--start_page', default=1, type=int,
 parser.add_argument('-dir', '--directory',
                     help='save the downloaded images to this local folder')
 parser.add_argument('--max_threads', default=8, type=int)
-parser.add_argument('-r', '--replace', default=False, type=bool,
+parser.add_argument('-r', '--replace', default=True, type=bool,
                     help='replace the existing files with the same name')
 parser.add_argument('--timeout', default=8, type=float,
                     help='request timeout (second, default = 8)')
@@ -91,6 +92,6 @@ if __name__ == '__main__':
         args.directory = Path(args.directory)
     check_folder(args.directory)
     # set default timeout
-    TIMEOUT = args.timeout
+    utils.TIMEOUT = args.timeout
 
     multi_threading()

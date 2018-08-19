@@ -166,9 +166,5 @@ def get_domain_title(domain):
         return domain
 
 
-def print_timeout():
-    print(f'timeout={TIMEOUT}s')
-
-
 if __name__ == '__main__':
     print(get_end_page_number('ssf91'))
