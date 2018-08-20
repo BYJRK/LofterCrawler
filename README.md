@@ -52,6 +52,6 @@ python loftercrawler.py yurisa123 -dir my_favorite_images
 
 ## Enjoy Your Photo Collection
 
-This grogram still needs improvements.
+This program still needs improvements.
 
 Looking forward to your comments!
