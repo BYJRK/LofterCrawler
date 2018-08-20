@@ -52,40 +52,41 @@ def multi_threading():
     print(f'Found {len(image_links)} images. Elapsed time: {stop - start:.4f} seconds.')
 
     # download all images in image_links
-    while True:  # loop until all finished or user abandon further downloading
-        start = time.time()
-        failed_links = []
-        results = []
+    print('Start downloading...')
+    start = time.time()
+    failed_links = []
+    results = []
+    pool = Pool(processes=args.max_threads)
+    for link in image_links:
+        pool.apply_async(download, args=(link, args.directory / get_filename(link), args.replace),
+                         callback=results.append)
+    pool.close()
+    pool.join()
+    if results:
+        for result in (result for result in results if result):
+            failed_links.append(result)
+    stop = time.time()
+    print(f'Downloaded {len(image_links) - len(failed_links)} images. Elapsed time is {stop - start:.4f} seconds.')
+    if failed_links:
+        print(f'{len(failed_links)} image(s) failed. Retrying...')
         pool = Pool(processes=args.max_threads)
-        for link in image_links:
-            pool.apply_async(download, args=(link, args.directory / get_filename(link), args.replace),
-                             callback=results.append)
+        unavailable_links = []
+        for link in failed_links:
+            # 3 times the original timeout, force replace
+            pool.apply_async(download, args=(link, args.directory / get_filename(link), True, args.timeout * 3),
+                             callback=unavailable_links.append)
         pool.close()
         pool.join()
-        if results:
-            for result in (result for result in results if result):
-                failed_links.append(result)
-        stop = time.time()
-        print(f'Downloaded {len(image_links) - len(failed_links)} images. Elapsed time is {stop - start:.4f} seconds.')
-        while failed_links:
-            choice = input(f'{len(failed_links)} image(s) failed. Try again? (y/n) > ')
-            if choice == 'n':
-                failed_links.clear()
-                break
-            if choice != 'y':
-                continue
-            image_links = failed_links.copy()
-        else:
-            break
-        # stop retrying
-        if choice == 'n':
-            break
+        if unavailable_links:
+            print(f'{len(unavailable_links)} not available. Please download them later.')
+            for link in unavailable_links:
+                print(link)
 
     print('Downloading finished. Goodbye!')
 
 
 if __name__ == '__main__':
-    args = parser.parse_args(['ssf91'])
+    args = parser.parse_args()
     # check if folder name is given
     if not args.directory:
         args.directory = get_domain_title(args.domain)

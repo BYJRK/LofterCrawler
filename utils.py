@@ -83,7 +83,7 @@ def check_folder(path):
         path.mkdir()
 
 
-def download(url, filename, replace=False):
+def download(url, filename, replace=False, timeout=None):
     """
     Download the file (typically image) from the url to the local path
     :param url: link of the file
@@ -95,7 +95,9 @@ def download(url, filename, replace=False):
     if not replace and file.exists():
         return
     try:
-        img = requests.get(url, stream=True, timeout=TIMEOUT)
+        if timeout:
+            timeout = TIMEOUT
+        img = requests.get(url, stream=True, timeout=timeout)
         if img.status_code == 200:
             with file.open('wb') as f:
                 for chunk in img:
@@ -167,4 +169,4 @@ def get_domain_title(domain):
 
 
 if __name__ == '__main__':
-    print(get_end_page_number('ssf91'))
+    print(get_end_page_number('yurisa123'))
