@@ -13,8 +13,8 @@ parser.add_argument('-start', '--start_page', default=1, type=int,
 parser.add_argument('-dir', '--directory',
                     help='save the downloaded images to this local folder')
 parser.add_argument('--max_threads', default=8, type=int)
-parser.add_argument('-r', '--replace', default=True, type=bool,
-                    help='replace the existing files with the same name')
+parser.add_argument('-r', '--replace', default=False, type=bool,
+                    help='replace the existing files with the same name (default = False)')
 parser.add_argument('--timeout', default=8, type=float,
                     help='request timeout (second, default = 8)')
 
@@ -62,21 +62,23 @@ def multi_threading():
                          callback=results.append)
     pool.close()
     pool.join()
-    if results:
-        for result in (result for result in results if result):
-            failed_links.append(result)
+    for link in (link for link in results if link):
+        failed_links.append(link)
     stop = time.time()
     print(f'Downloaded {len(image_links) - len(failed_links)} images. Elapsed time is {stop - start:.4f} seconds.')
     if failed_links:
         print(f'{len(failed_links)} image(s) failed. Retrying...')
         pool = Pool(processes=args.max_threads)
-        unavailable_links = []
+        results = []
         for link in failed_links:
             # 3 times the original timeout, force replace
             pool.apply_async(download, args=(link, args.directory / get_filename(link), True, args.timeout * 3),
-                             callback=unavailable_links.append)
+                             callback=results.append)
         pool.close()
         pool.join()
+        unavailable_links = []
+        for link in (link for link in results if link):
+            unavailable_links.append(link)
         if unavailable_links:
             print(f'{len(unavailable_links)} not available. Please download them later.')
             for link in unavailable_links:
@@ -86,7 +88,7 @@ def multi_threading():
 
 
 if __name__ == '__main__':
-    args = parser.parse_args()
+    args = parser.parse_args(['ssf91', '-max', '10'])
     # check if folder name is given
     if not args.directory:
         args.directory = get_domain_title(args.domain)
