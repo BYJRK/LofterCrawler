@@ -92,7 +92,7 @@ if __name__ == '__main__':
     # check if folder name is given
     if not args.directory:
         args.directory = get_domain_title(args.domain)
-        args.directory = Path(args.directory)
+    args.directory = Path(args.directory)
     check_folder(args.directory)
     # set default timeout
     utils.TIMEOUT = args.timeout
