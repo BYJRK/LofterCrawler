@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 import requests
 import re
 from bs4 import BeautifulSoup

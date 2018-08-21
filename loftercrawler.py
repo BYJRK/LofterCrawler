@@ -1,4 +1,4 @@
-from multiprocessing import Pool
+﻿from multiprocessing import Pool
 from utils import *
 import utils
 import argparse
@@ -88,7 +88,7 @@ def multi_threading():
 
 
 if __name__ == '__main__':
-    args = parser.parse_args(['ssf91', '-max', '10'])
+    args = parser.parse_args()
     # check if folder name is given
     if not args.directory:
         args.directory = get_domain_title(args.domain)
