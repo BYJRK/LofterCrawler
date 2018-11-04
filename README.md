@@ -10,7 +10,7 @@ usage: loftercrawler.py [-h] [-max MAX_PAGE] [-start START_PAGE]
                         domain
 
 positional arguments:
-  domain
+  domain                domain name or post link
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -22,7 +22,8 @@ optional arguments:
                         save the downloaded images to this local folder
   --max_threads MAX_THREADS
   -r REPLACE, --replace REPLACE
-                        replace the existing files with the same name
+                        replace the existing files with the same name (default
+                        = False)
   --timeout TIMEOUT     request timeout (second, default = 8)
 ```
   
@@ -44,6 +45,11 @@ python loftercrawler.py yurisa123 -start 5 -max 10
 python loftercrawler.py yurisa123 -dir my_favorite_images
 ```
 
+- If you want do **download all images in a specific post**, you can type:
+```shell
+python loftercrawler.py http://yurisa123.lofter.com/post/1cf5f941_12bd7e63c
+```
+
 - `--max_threads 8` means the number of worker processes ([for more details](https://docs.python.org/3.6/library/multiprocessing.html#using-a-pool-of-workers))
 
 - `--timeout 8` is the read timeout of HTTP requests ([for more details](http://docs.python-requests.org/en/master/user/advanced/#timeouts))
@@ -63,3 +69,10 @@ python loftercrawler.py yurisa123 -dir my_favorite_images
 This program still needs improvements.
 
 Looking forward to your comments!
+
+## Future Works
+
+1. Separate images into different folders named by the title of posts;
+2. Design a GUI;
+3. Introduce CNNs to decide whether a downloaded image shall be remained depending on face score;
+4. To be continued...
