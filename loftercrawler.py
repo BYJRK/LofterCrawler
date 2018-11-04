@@ -5,7 +5,7 @@ import argparse
 import time
 
 parser = argparse.ArgumentParser()
-parser.add_argument('domain')
+parser.add_argument('domain', help='domain name or post link')
 parser.add_argument('-max', '--max_page', default=160, type=int,
                     help='maximum page amount (default = 160)')
 parser.add_argument('-start', '--start_page', default=1, type=int,
@@ -19,14 +19,10 @@ parser.add_argument('--timeout', default=8, type=float,
                     help='request timeout (second, default = 8)')
 
 
-def multi_threading():
-    print(f'Start crawling {args.domain}.lofter.com')
-    # image links to be downloaded later
-    image_links = []
+def post_links_in_page_range():
+    """get all post links in a given page range"""
     # post links to find image links inside
     post_links = []
-
-    # find all posts
     start_page = args.start_page
     end_page = get_end_page_number(args.domain, start_page, args.max_page)
     print(f'Searching from page {start_page} to {end_page}')
@@ -39,8 +35,13 @@ def multi_threading():
     pool.close()
     pool.join()
     print(f'Found {len(post_links)} posts.')
+    return post_links
+    
 
-    # find all image links in post_links
+def image_links_in_post_links(post_links):
+    """find all image links from a list of post links"""
+    # image links to be downloaded later
+    image_links = []
     start = time.time()
     pool = Pool(processes=args.max_threads)
     results = pool.map_async(get_image_links_in_post, post_links)
@@ -50,8 +51,11 @@ def multi_threading():
     pool.join()
     stop = time.time()
     print(f'Found {len(image_links)} images. Elapsed time: {stop - start:.4f} seconds.')
+    return image_links
 
-    # download all images in image_links
+
+def download_images_from_links(image_links):
+    """download all images in image links"""
     print('Start downloading...')
     start = time.time()
     failed_links = []
@@ -84,17 +88,45 @@ def multi_threading():
             for link in unavailable_links:
                 print(link)
 
-    print('Downloading finished. Goodbye!')
 
-
-if __name__ == '__main__':
-    args = parser.parse_args()
-    # check if folder name is given
+def crawl_domain():
+    """find all images in a specific page range and download them"""
+    print(f'Start crawling {args.domain}.lofter.com')
+    # check folder
     if not args.directory:
         args.directory = get_domain_title(args.domain)
     args.directory = Path(args.directory)
     check_folder(args.directory)
+    # find all posts
+    post_links = post_links_in_page_range()
+    # find all image links to download
+    image_links = image_links_in_post_links(post_links)
+    # download all images from image links
+    download_images_from_links(image_links)
+
+
+def crawl_post(post_link):
+    """find all images in a given post and download them"""
+    if not args.directory:
+        args.directory = args.domain.split('/')[-1]
+    args.directory = Path(args.directory)
+    check_folder(args.directory)
+    print(f'folder: #{args.directory}#')
+    
+    image_links = get_image_links_in_post(args.domain)
+    print(f"Found {len(image_links)} images.")
+    download_images_from_links(image_links)
+
+if __name__ == '__main__':
+    args = parser.parse_args()
+
     # set default timeout
     utils.TIMEOUT = args.timeout
 
-    multi_threading()
+    # domain name looks like [a-zA-Z0-9]+
+    # post link looks like domain.lofter.com/post/...
+    if re.search(r'\.lofter\.com/post/', args.domain):
+        crawl_post(args.domain)
+    else:
+        crawl_domain()
+    print('Downloading finished. Goodbye!')

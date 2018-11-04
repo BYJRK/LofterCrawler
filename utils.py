@@ -10,11 +10,19 @@ HEADERS = {
 }
 TIMEOUT = 8
 
+cache_url = ''
+cache_html = ''
+
 
 def get_html(url):
     """Get the html doc from the given url"""
+    global cache_html, cache_url
+    if url == cache_url and cache_html:
+        return cache_html
     try:
         r = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
+        cache_url = url
+        cache_html = r.text
         return r.text
     except Exception as e:
         print(f'Cannot access {url}. Reason: {e}')
@@ -65,7 +73,16 @@ def get_image_links_in_post(url):
     soup = BeautifulSoup(html, 'html.parser')
     for link in soup.find_all(lambda tag: tag.has_attr('bigimgsrc')):
         links.append(link.get('bigimgsrc'))
+    title = soup.head.title.string.split('\n')[0]
     return links
+
+
+def get_post_title(url):
+    """Get the post title of the given link"""
+    html = get_html(url)
+    links = []
+    soup = BeautifulSoup(html, 'html.parser')
+    return soup.head.title.string.split('\n')[0]
 
 
 def get_filename(url):
@@ -103,7 +120,7 @@ def download(url, filename, replace=False, timeout=None):
                 for chunk in img:
                     f.write(chunk)
         return
-    except:
+    except Exception as e:
         print(f'Downloading timeout: {url}')
         if file.exists():
             file.unlink()
@@ -162,6 +179,7 @@ def get_domain_title(domain):
     try:
         html = get_html(get_page_url(domain, 1))
         soup = BeautifulSoup(html, 'html.parser')
+        title = re.split(r'(?s)\s', soup.head.title.string)[0].strip()
         return soup.head.title.string
     except:
         # for some reason, the title cannot be reached
