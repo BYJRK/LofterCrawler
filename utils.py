@@ -25,7 +25,7 @@ def get_html(url):
         cache_html = r.text
         return r.text
     except Exception as e:
-        print(f'Cannot access {url}. Reason: {e}')
+        # print(f'Cannot access {url}. Reason: {e}')
         return ''
 
 
@@ -73,7 +73,6 @@ def get_image_links_in_post(url):
     soup = BeautifulSoup(html, 'html.parser')
     for link in soup.find_all(lambda tag: tag.has_attr('bigimgsrc')):
         links.append(link.get('bigimgsrc'))
-    title = soup.head.title.string.split('\n')[0]
     return links
 
 
