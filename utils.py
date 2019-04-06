@@ -2,72 +2,94 @@
 import requests
 import re
 from bs4 import BeautifulSoup
+from typing import List
 
 
 HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                  'AppleWebKit/537.36 (KHTML, like Gecko) '
                   'Chrome/68.0.3440.106 Safari/537.36 '
 }
 TIMEOUT = 8
+MAX_CACHE_COUNT = 10
 
-cache_url = ''
-cache_html = ''
-
-
-def get_html(url):
-    """Get the html doc from the given url"""
-    global cache_html, cache_url
-    if url == cache_url and cache_html:
-        return cache_html
-    try:
-        r = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
-        cache_url = url
-        cache_html = r.text
-        return r.text
-    except Exception as e:
-        # print(f'Cannot access {url}. Reason: {e}')
-        return ''
+cache_html = {}
 
 
-def get_page_url(domain, page_number):
-    """Get the url of a specific page within a lofter domain"""
-    assert type(page_number) is int and page_number >= 1
+def get_html(url: str) -> str:
+    """获取指定的网址的 html 文档
+    会缓存最近的 10 个（默认），便于加速下次访问
+    
+    :param url: 指定的网址
+    :return: 获得的 html 文档
+    """
+    # 虽然没有必要，但是为了避免歧义，还是引入全局变量
+    global cache_html
+    # 如果之前已经获取过对应的 html，则直接返回
+    if url in cache_html and cache_html[url]:
+        return cache_html[url]
+    r = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
+    # 成功获取 html
+    if r.status_code == 200:
+        html = r.text
+        if len(cache_html) >= MAX_CACHE_COUNT:
+            # Python 3 中 dict 中的键值对是按照加入的顺序排列的
+            # 所以直接删除第一个
+            old_key = list(cache_html.keys())[0]
+            cache_html.pop(old_key)
+        # 添加新获取的 html
+        cache_html[url] = html
+        return html
+    else:
+        print('cannot access', url)
+        return None        
 
+
+def get_page_url(domain: str, page_number: int) -> str:
+    """获取指定博客某一页的网址
+    
+    :param domain: 形如 yurisa123
+    :param page_number: 一个正整数
+    :return: 这一页的网址
+    """
+    assert type(page_number) is int and page_number >= 1, '输入的页数有误'
+    # 虽然 ?page=1 也是可以正确获取首页内容的，但最好还是不这样写
     if page_number == 1:
         return f'http://{domain}.lofter.com/'
     return f'http://{domain}.lofter.com/?page={page_number}'
 
 
-def get_posts_in_page(url):
+def get_posts_in_page(url: str) -> List[str]:
+    """获取博客某一页的所有推文的链接
+    
+    :param url: 形如 http://yurisa123.lofter.com/[?page=2]
+    :return: 一个包含所有推文链接的列表
     """
-    Get the links of posts on a page
-    :param url: the url of the page
-    :return: list of links
-    """
-    # input url is like: http://xxx.lofter.com/
-    #                    http://xxx.lofter.com/?page=2
-    # the pattern should be: ................./post
+    # 推文链接形如 xxx.lofter.com/post
+    # 前面必须加博客的域名，因为推主可能会转发别人的
     pattern = url[:url.index('.com/') + 5] + 'post'
     links = []
     html = get_html(url)
     if not html:
         return []
     soup = BeautifulSoup(html, 'html.parser')
-    # the link need to be limited to the given domain
-    # because the author may repost others' posts
     posts = soup.find_all('a', href=re.compile(pattern))
     for post in posts:
         href = post.get('href')
-        # ignore the repeated posts which may caused by different
-        # kinds of homepage template used by the author
+        # 忽略已有的推文链接
+        # 这可能是由于一些奇怪的网页模板导致的
         if href in links:
             continue
         links.append(href)
     return links
 
 
-def get_image_links_in_post(url):
-    """Get the image (original size) links from the given post link"""
+def get_image_links_in_post(url: str) -> List[str]:
+    """获取指定推文下的所有图片（高清原图）的链接
+    
+    :param url: 推文的链接
+    :return: 包含推文下所有图片的链接的列表
+    """
     html = get_html(url)
     links = []
     soup = BeautifulSoup(html, 'html.parser')
@@ -76,42 +98,53 @@ def get_image_links_in_post(url):
     return links
 
 
-def get_post_title(url):
-    """Get the post title of the given link"""
+def get_post_title(url: str) -> str:
+    """获取推文的标题（一般是拿去做文件或文件夹的名称）
+    
+    :param url: 推文的链接
+    :return: 推文的标题
+    """    
     html = get_html(url)
-    links = []
     soup = BeautifulSoup(html, 'html.parser')
+    # 有时候莫名其妙地，推文标题中会包含换行符
     return soup.head.title.string.split('\n')[0]
 
 
-def get_filename(url):
-    """Generate the image filename from its url"""
-    # two examples
+def get_filename(url: str) -> str:
+    """从图片的链接中获取图片的真实名称
+    
+    :param url: 图片的链接
+    :return: 图片的名称
+    """
+    # 图片的名称形如：
     # zJtTDg2RGdJREZ3PT0.jpg
     # 5982469947077.jpg
     # http://xxx/xxx.jpg?imageView&amp;thumbnail=1680x0&amp;quality=96&amp;stripmeta=0&amp;type=jpg
     return re.search(r'[a-zA-Z0-9]+\.\w+(?=\?|$)', url).group()
 
 
-def check_folder(path):
-    """Check if the given folder path exists. If not, create it"""
+def check_folder(path: Path) -> None:
+    """检查文件夹是否存在；如果不存在，则创建
+    
+    :param path: 文件夹的路径
+    """
     if not path.exists() or not path.is_dir():
         path.mkdir()
 
 
 def download(url, filename, replace=False, timeout=None):
-    """
-    Download the file (typically image) from the url to the local path
-    :param url: link of the file
-    :param filename: save to the path
-    :param replace: replace the existing file with the same name
-    :return: None if downloaded successfully (or already exists). Otherwise, return the failed url
+    """从给定的链接下载图片到指定的位置
+    
+    :param url: 图片链接
+    :param filename: 保存地址
+    :param replace: 是否覆盖已有的文件
+    :return: 如果下载成功，则返回 None；否则返回失败的链接
     """
     file = Path(filename)
     if not replace and file.exists():
         return
     try:
-        if timeout:
+        if not timeout:
             timeout = TIMEOUT
         img = requests.get(url, stream=True, timeout=timeout)
         if img.status_code == 200:
@@ -121,13 +154,19 @@ def download(url, filename, replace=False, timeout=None):
         return
     except Exception as e:
         print(f'Downloading timeout: {url}')
+        # 即使本地已经有该文件，八成也是有问题的
         if file.exists():
             file.unlink()
         return url
 
 
-def is_valid_page(url):
-    """Check if the page is valid (contains posts)"""
+def is_valid_page(url: str) -> bool:
+    """检查博客的指定页面是否存在
+    除了常规检查，还可以用来查看博客页数的上限
+    
+    :param url: 页面的链接
+    :return: 是否存在
+    """
     posts = get_posts_in_page(url)
     if posts:
         return True
@@ -136,31 +175,48 @@ def is_valid_page(url):
 
 
 def get_end_page_number(domain, start_page=1, max_page=0):
-    """Find the max page number according to the given max page number"""
+    """查找需要爬取的博客的结束页码
+    大致算法为：
+    If 给定上限页:
+        If 上限页有效:
+            Return 上限页
+        Else:
+            right = 上限页 - 1
+    Else:
+        right = 32
+    While right 页有效:
+        right = right * 2
+    left = 起始页
+    二分法查找 left 和 right 中间最大的有效页
+    Return 找到的有效页
+    
+    :param domain: 博客的域名
+    :param start_page: 起始页（默认为 1）
+    :param max_page: 最大总页数（默认为 0，表示直到最后一页）
+    :return: 结束页码
+    """
     assert type(start_page) is int and start_page > 0
     assert type(max_page) is int and max_page >= 0
-    # if max_page is given
+    # 如果最大页数给定
     if max_page:
         end_page = start_page + max_page - 1
         if is_valid_page(get_page_url(domain, end_page)):
             return end_page
         right = end_page - 1
     else:
-        # if max_page is not given
+        # 如果没有给定最大页数
         right = 32
-    # if the given start page is already invalid
+    # 如果给定的起始页数已经是无效的
     if not is_valid_page(get_page_url(domain, start_page)):
         raise Exception('the given start page is invalid')
-    # find the smallest invalid page number by multiplying 2
+    # 寻找最小的无效页码
     left = 1
     while is_valid_page(get_page_url(domain, right)):
         left = right
         right *= 2
-        # print(f'{left}, {right}')
-    # bisection method
+    # 二分法
     while right - left > 1:
         middle = (right - left) // 2 + left
-        # print(f'{left}, {middle}, {right}')
         result = is_valid_page(get_page_url(domain, int(middle)))
         if result:
             left = middle
@@ -173,15 +229,19 @@ def get_end_page_number(domain, start_page=1, max_page=0):
                 return left
 
 
-def get_domain_title(domain):
-    """Find the domain title in its html doc"""
+def get_domain_title(domain: str) -> str:
+    """获取域名的标题
+    
+    :param domain: 域名
+    :return: 标题
+    """
     try:
         html = get_html(get_page_url(domain, 1))
         soup = BeautifulSoup(html, 'html.parser')
         title = re.split(r'(?s)\s', soup.head.title.string)[0].strip()
         return soup.head.title.string
     except:
-        # for some reason, the title cannot be reached
+        # 如果无法获取标题，则返回域名
         return domain
 
 
