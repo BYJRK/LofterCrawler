@@ -17,11 +17,9 @@ cache_html = {}
 
 
 def get_html(url: str) -> str:
-    """获取指定的网址的 html 文档
+    """
+    获取指定的网址的 html 文档。
     会缓存最近的 10 个（默认），便于加速下次访问
-    
-    :param url: 指定的网址
-    :return: 获得的 html 文档
     """
     # 虽然没有必要，但是为了避免歧义，还是引入全局变量
     global cache_html
@@ -42,15 +40,12 @@ def get_html(url: str) -> str:
         return html
     else:
         print('cannot access', url)
-        return None        
+        return None
 
 
 def get_page_url(domain: str, page_number: int) -> str:
-    """获取指定博客某一页的网址
-    
-    :param domain: 形如 yurisa123
-    :param page_number: 一个正整数
-    :return: 这一页的网址
+    """
+    获取指定博客某一页的网址
     """
     assert type(page_number) is int and page_number >= 1, '输入的页数有误'
     # 虽然 ?page=1 也是可以正确获取首页内容的，但最好还是不这样写
@@ -60,10 +55,8 @@ def get_page_url(domain: str, page_number: int) -> str:
 
 
 def get_posts_in_page(url: str) -> List[str]:
-    """获取博客某一页的所有推文的链接
-    
-    :param url: 形如 http://yurisa123.lofter.com/[?page=2]
-    :return: 一个包含所有推文链接的列表
+    """
+    获取博客某一页的所有推文的链接
     """
     # 推文链接形如 xxx.lofter.com/post
     # 前面必须加博客的域名，因为推主可能会转发别人的
@@ -85,10 +78,8 @@ def get_posts_in_page(url: str) -> List[str]:
 
 
 def get_image_links_in_post(url: str) -> List[str]:
-    """获取指定推文下的所有图片（高清原图）的链接
-    
-    :param url: 推文的链接
-    :return: 包含推文下所有图片的链接的列表
+    """
+    获取指定推文下的所有图片（高清原图）的链接
     """
     html = get_html(url)
     links = []
@@ -99,11 +90,9 @@ def get_image_links_in_post(url: str) -> List[str]:
 
 
 def get_post_title(url: str) -> str:
-    """获取推文的标题（一般是拿去做文件或文件夹的名称）
-    
-    :param url: 推文的链接
-    :return: 推文的标题
-    """    
+    """
+    获取推文的标题（一般是拿去做文件或文件夹的名称）
+    """
     html = get_html(url)
     soup = BeautifulSoup(html, 'html.parser')
     # 有时候莫名其妙地，推文标题中会包含换行符
@@ -111,10 +100,8 @@ def get_post_title(url: str) -> str:
 
 
 def get_filename(url: str) -> str:
-    """从图片的链接中获取图片的真实名称
-    
-    :param url: 图片的链接
-    :return: 图片的名称
+    """
+    从图片的链接中获取图片的真实名称
     """
     # 图片的名称形如：
     # zJtTDg2RGdJREZ3PT0.jpg
@@ -124,17 +111,17 @@ def get_filename(url: str) -> str:
 
 
 def check_folder(path: Path) -> None:
-    """检查文件夹是否存在；如果不存在，则创建
-    
-    :param path: 文件夹的路径
+    """
+    检查文件夹是否存在。如果不存在，则创建
     """
     if not path.exists() or not path.is_dir():
         path.mkdir()
 
 
 def download(url, filename, replace=False, timeout=None):
-    """从给定的链接下载图片到指定的位置
-    
+    """
+    从给定的链接下载图片到指定的位置
+
     :param url: 图片链接
     :param filename: 保存地址
     :param replace: 是否覆盖已有的文件
@@ -161,11 +148,9 @@ def download(url, filename, replace=False, timeout=None):
 
 
 def is_valid_page(url: str) -> bool:
-    """检查博客的指定页面是否存在
+    """
+    检查博客的指定页面是否存在。
     除了常规检查，还可以用来查看博客页数的上限
-    
-    :param url: 页面的链接
-    :return: 是否存在
     """
     posts = get_posts_in_page(url)
     if posts:
@@ -175,25 +160,16 @@ def is_valid_page(url: str) -> bool:
 
 
 def get_end_page_number(domain, start_page=1, max_page=0):
-    """查找需要爬取的博客的结束页码
-    大致算法为：
-    If 给定上限页:
-        If 上限页有效:
-            Return 上限页
-        Else:
-            right = 上限页 - 1
-    Else:
-        right = 32
-    While right 页有效:
-        right = right * 2
-    left = 起始页
-    二分法查找 left 和 right 中间最大的有效页
-    Return 找到的有效页
-    
-    :param domain: 博客的域名
-    :param start_page: 起始页（默认为 1）
-    :param max_page: 最大总页数（默认为 0，表示直到最后一页）
-    :return: 结束页码
+    """
+    查找需要爬取的博客的结束页码
+
+    Args:
+        domain: 博客的域名
+        start_page: 起始页（默认为 1）
+        max_page: 最大总页数（默认为 0，表示直到最后一页）
+
+    Returns:
+        int: 结束页码
     """
     assert type(start_page) is int and start_page > 0
     assert type(max_page) is int and max_page >= 0
@@ -230,10 +206,14 @@ def get_end_page_number(domain, start_page=1, max_page=0):
 
 
 def get_domain_title(domain: str) -> str:
-    """获取域名的标题
-    
-    :param domain: 域名
-    :return: 标题
+    """
+    获取域名的标题
+
+    Args:
+        domain: 域名，形如 yurisa123
+
+    Returns:
+        str: 域名的标题
     """
     try:
         html = get_html(get_page_url(domain, 1))
