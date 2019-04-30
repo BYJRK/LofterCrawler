@@ -76,7 +76,7 @@ python loftercrawler.py http://yurisa123.lofter.com/post/1cf5f941_12bd7e63c
 
 - `--max_threads 8` 最大线程数 ([详细解释](https://docs.python.org/3.6/library/multiprocessing.html#using-a-pool-of-workers))
 
-- `--timeout 8` HTTP 请求的超时时间（秒） ([for more details](http://docs.python-requests.org/en/master/user/advanced/#timeouts))
+- `--timeout 8` HTTP 请求的超时时间（秒） ([详细解释](http://docs.python-requests.org/en/master/user/advanced/#timeouts))
 
 - `--cache_count 10` 缓存的网址数量（默认为 10，已经够用。更多也不会有什么速度提升）
 
