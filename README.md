@@ -56,14 +56,14 @@ python loftercrawler.py http://yurisa123.lofter.com/
 - 如果你想下载从第 5 页到第 10 页（共 6 页）的图片，可以这样：
 
 ```shell
-python loftercrawler.py yurisa123 -start 5 -max 6
-python loftercrawler.py yurisa123 -start 5 -stop 10
+python loftercrawler.py yurisa123 --start 5 --max 6
+python loftercrawler.py yurisa123 --start 5 --stop 10
 ```
 
 - 如果你希望将图片下载到指定目录，可以这样（目录会自动创建）：
 
 ```shell
-python loftercrawler.py yurisa123 -dir my_favorite_images
+python loftercrawler.py yurisa123 --dir my_favorite_images
 ```
 
 - 如果你想下载某个贴子下面的所有图片，可以：
@@ -74,11 +74,18 @@ python loftercrawler.py http://yurisa123.lofter.com/post/1cf5f941_12bd7e63c
 
 - 其他常用参数的解释：
 
-- `--max-threads 8` 最大线程数 ([详细解释](https://docs.python.org/3.6/library/multiprocessing.html#using-a-pool-of-workers))
+- `--max_threads 8` 最大线程数 ([详细解释](https://docs.python.org/3.6/library/multiprocessing.html#using-a-pool-of-workers))
 
 - `--timeout 8` HTTP 请求的超时时间（秒） ([for more details](http://docs.python-requests.org/en/master/user/advanced/#timeouts))
 
+- `--cache_count 10` 缓存的网址数量（默认为 10，已经够用。更多也不会有什么速度提升）
+
 - `--replace` 是否覆盖已存在的同名文件（如果否，即便已存在的文件损坏，也会直接跳过对应图片的下载）
+
+- `--retry 1` 最大重试次数（默认为 1）
+
+- `--save_failed` 是否将失败的图片链接列表保存到本地
+
 
 ## 算法
 
@@ -94,6 +101,7 @@ python loftercrawler.py http://yurisa123.lofter.com/post/1cf5f941_12bd7e63c
 1. 试图从网页中嗅探更加合适的文件夹或图片名称
 1. 添加更多的参数，比如是否删掉边长过小的图片
 1. 自动删除被和谐的图片
+1. 从文本文件读取图片链接列表并进行下载
 
 ## 未来计划
 
