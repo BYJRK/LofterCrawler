@@ -2,6 +2,16 @@
 
 一个基于 Python 3.6 的多线程 [Lofter](http://www.lofter.com/) 爬虫
 
+## 依赖
+
+```
+multiprocessing
+tqdm
+bs4
+requests
+pathlib
+```
+
 ## 用法
 ```
 python loftercrawler.py -h
