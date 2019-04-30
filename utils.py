@@ -125,11 +125,11 @@ def download(url, filename, replace=False, timeout=None):
     :param url: 图片链接
     :param filename: 保存地址
     :param replace: 是否覆盖已有的文件
-    :return: 如果下载成功，则返回 None；否则返回失败的链接
+    :return: 如果下载成功，则返回 (True, filepath)；否则返回 (False, url)
     """
     file = Path(filename)
     if not replace and file.exists():
-        return
+        return (True, file)
     try:
         if not timeout:
             timeout = TIMEOUT
@@ -138,13 +138,13 @@ def download(url, filename, replace=False, timeout=None):
             with file.open('wb') as f:
                 for chunk in img:
                     f.write(chunk)
-        return
-    except Exception as e:
+        return (True, file)
+    except:
         print(f'Downloading timeout: {url}')
         # 即使本地已经有该文件，八成也是有问题的
         if file.exists():
             file.unlink()
-        return url
+        return (False, url)
 
 
 def is_valid_page(url: str) -> bool:

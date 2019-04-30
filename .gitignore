@@ -1,4 +1,8 @@
 *.jpg
 *.png
+*.gif
 *.pyc
+*.txt
 idea.py
+__pycache__/
+.vscode/

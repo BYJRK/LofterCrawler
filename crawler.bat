@@ -1,1 +1,2 @@
-python loftercrawler.py yurisa123
+python loftercrawler.py -h
+pause
