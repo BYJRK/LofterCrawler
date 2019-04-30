@@ -31,7 +31,7 @@ def post_links_in_page_range():
         end_page = args.end
     else:
         end_page = get_end_page_number(args.domain, start_page, args.max)
-    print(f'Searching from page {start_page} to {end_page}')
+    print(f'开始搜索从 {start_page} 页到 {end_page} 页的所有贴子链接')
 
     pool = Pool(processes=args.max_threads)
     results = pool.map_async(get_posts_in_page,
@@ -40,13 +40,14 @@ def post_links_in_page_range():
         post_links.extend(result)
     pool.close()
     pool.join()
-    print(f'Found {len(post_links)} posts.')
+    print(f'共找到 {len(post_links)} 个贴子')
     return post_links
 
 
 def image_links_in_post_links(post_links):
     """find all image links from a list of post links"""
     # image links to be downloaded later
+    print('开始搜索所有贴子中的图片链接')
     image_links = []
     start = time.time()
     pool = Pool(processes=args.max_threads)
@@ -57,14 +58,14 @@ def image_links_in_post_links(post_links):
     pool.join()
     stop = time.time()
     print(
-        f'Found {len(image_links)} images. Elapsed time: {stop - start:.4f} seconds.')
+        f'共找到 {len(image_links)} 张图片，耗时 {stop - start:.4f} 秒')
     return image_links
 
 
 def download_images_from_links(image_links):
     """download all images in image links"""
+    print('开始下载图片')
     pbar = tqdm(total=len(image_links), ascii=True)
-    print('Start downloading...')
     start = time.time()
     failed_links = []
     results = []
@@ -79,12 +80,13 @@ def download_images_from_links(image_links):
                          callback=download_callback)
     pool.close()
     pool.join()
+    pbar.close()
     failed_links.extend([link for link in results if link])
     stop = time.time()
     print(
-        f'Downloaded {len(image_links) - len(failed_links)} images. Elapsed time is {stop - start:.4f} seconds.')
+        f'共下载 {len(image_links) - len(failed_links)} 张图片，耗时 {stop - start:.4f} 秒')
     if failed_links:
-        print(f'{len(failed_links)} image(s) failed. Retrying...')
+        print(f'其中 {len(failed_links)} 张图片下载失败，尝试重新下载')
         pool = Pool(processes=args.max_threads)
         results = []
         for link in failed_links:
@@ -98,14 +100,14 @@ def download_images_from_links(image_links):
             unavailable_links.append(link)
         if unavailable_links:
             print(
-                f'{len(unavailable_links)} not available. Please download them later.')
+                f'无法下载 {len(unavailable_links)}，请稍后重试')
             for link in unavailable_links:
                 print(link)
 
 
 def crawl_domain():
     """find all images in a specific page range and download them"""
-    print(f'Start crawling {args.domain}.lofter.com')
+    print(f'开始爬取 {args.domain}.lofter.com')
     # check folder
     if not args.dir:
         args.dir = get_domain_title(args.domain)
@@ -125,27 +127,31 @@ def crawl_post(post_link):
         args.dir = args.domain.split('/')[-1]
     args.dir = Path(args.dir)
     check_folder(args.dir)
-    print(f'folder: #{args.dir}#')
+    print(f'存放位置：{args.dir}')
 
     image_links = get_image_links_in_post(args.domain)
-    print(f"Found {len(image_links)} images.")
+    print(f"找到 {len(image_links)} 张图片，准备开始下载")
     download_images_from_links(image_links)
 
 
 if __name__ == '__main__':
     args = parser.parse_args()
 
-    # set default timeout
+    # 设置初始参数
     utils.TIMEOUT = args.timeout
+    utils.MAX_CACHE_COUNT = args.cache_count
 
-    # domain name looks like [a-zA-Z0-9]+
+    # domain name looks like [a-zA-Z0-9-]+
     # post link looks like domain.lofter.com/post/...
+    # 先检查是否为单个 post
     if re.search(r'\.lofter\.com/post/', args.domain):
         crawl_post(args.domain)
-    args.domain = re.search(
-        r'(?<=http://)(?P<domain>[^.]+)\.lofter\.com/?', args.domain).group('domain')
-    if args.domain:
+    # 然后提取 domain 名称
+    re_domain = re.search(
+        r'(?:http://)?([a-zA-Z0-9-]+)(?:\.\w+\.com.*)?', args.domain)
+    if re_domain:
+        args.domain = re_domain.group(1)
         crawl_domain()
     else:
         raise Exception("输入的域名有误。")
-    print('Downloading finished. Goodbye!')
+    print('下载完毕。')
