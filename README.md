@@ -1,6 +1,10 @@
 # LofterCrawler
 A multi-threading Lofter crawler based on Python 3.6
 
+New Version: https://github.com/BYJRK/LofterCrawlerV2
+
+For Chinese version, please refer to branch [advanced](https://github.com/BYJRK/LofterCrawler/tree/advance)
+
 ## Usage
 ```
 python loftercrawler.py -h
